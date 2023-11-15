@@ -1,0 +1,19 @@
+version: '3'
+services:
+  soap-jahitin:
+    build: .
+    image: app:latest
+    ports:
+      - "8003:8003"
+
+  soap-jahitin-db:
+    image: mysql:latest
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: soap_jahitin_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: jahitin
