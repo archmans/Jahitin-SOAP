@@ -73,11 +73,13 @@ public class Subscription {
 
     @WebMethod
     public String newSubscription(int user_id) {
+        // if (!validateAPIKey()) {
+        //     return "API Key is not valid";
+        // }
         Database db = new Database();
         MessageContext msgContext = wsContext.getMessageContext();
         HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
         String endpoint = httpExchange.getRequestURI().toString();
-        
         try {
             if (!isSubscriptionExists(user_id)) {
                 this.insertLogging("SUBSCRIPTION BARU dari " + user_id, endpoint);
@@ -129,10 +131,42 @@ public class Subscription {
     }
 
     @WebMethod
-    public List<String> getAllPendingRequest() throws Exception {
-        if (!validateAPIKey()) {
-            throw new Exception("API Key is not valid");
+    public String updateStatus(String status, int user_id) {
+        // if (!validateAPIKey()) {
+        //     return "API Key is not valid";
+        // }
+        MessageContext msgContext = wsContext.getMessageContext();
+        HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
+        String endpoint = httpExchange.getRequestURI().toString();
+        this.insertLogging("UPDATE STATUS " + status + " dari " + user_id, endpoint);
+        Database db = new Database();
+        String query = "UPDATE subscription SET status = ? WHERE user_id = ?";
+    
+        try (PreparedStatement preparedStatement = db.getConnection().prepareStatement(query)) {
+            preparedStatement.setString(1, status);
+            preparedStatement.setInt(2, user_id);
+    
+            int affectedRows = preparedStatement.executeUpdate();
+    
+            if (affectedRows > 0) {
+                return "Status updated to " + status + " user_id: " + user_id;
+            } else {
+                return "User with user_id: " + user_id + " not found";
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error updating status: " + e.getMessage();
+        } finally {
+            db.closeConnection();
         }
+    }
+    
+
+    @WebMethod
+    public List<String> getAllPendingRequest() throws Exception {
+        // if (!validateAPIKey()) {
+        //     throw new Exception("API Key is not valid");
+        // }
         List<String> resultList = new ArrayList<>();
         try {
             MessageContext msgContext = wsContext.getMessageContext();
@@ -166,9 +200,9 @@ public class Subscription {
 
     @WebMethod
     public String getStatus(int user_id) throws Exception {
-        if (!validateAPIKey()) {
-            throw new Exception("API Key is not valid");
-        }
+        // if (!validateAPIKey()) {
+        //     throw new Exception("API Key is not valid");
+        // }
         try {
             MessageContext msgContext = wsContext.getMessageContext();
             HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
