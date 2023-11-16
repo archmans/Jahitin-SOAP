@@ -26,8 +26,7 @@ public class Subscription {
     @Resource
     WebServiceContext wsContext;
 
-    @WebMethod
-    public void insertLogging(String description, String endpoint) {
+    private void insertLogging(String description, String endpoint) {
         Database db = new Database();
 
         try {
@@ -71,45 +70,51 @@ public class Subscription {
         }
     }
 
+
     @WebMethod
     public String newSubscription(int user_id) {
-        if (!validateAPIKey()) {
-            return "API Key is not valid";
-        }
+        // if (!validateAPIKey()) {
+        //     return "API Key is not valid";
+        // }
         Database db = new Database();
         MessageContext msgContext = wsContext.getMessageContext();
         HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
         String endpoint = httpExchange.getRequestURI().toString();
         try {
             if (!isSubscriptionExists(user_id)) {
-                this.insertLogging("SUBSCRIPTION BARU dari " + user_id, endpoint);
-    
+                
                 String query = "INSERT INTO subscription (user_id) VALUES (?)";
                 try (PreparedStatement preparedStatement = db.getConnection().prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
                     preparedStatement.setInt(1, user_id);
                     int result = preparedStatement.executeUpdate();
-    
+                    
                     if (result > 0) {
                         try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
                             if (generatedKeys.next()) {
                                 int subscriber_id = generatedKeys.getInt(1);
-                                return "New subscription created for user_id: " + user_id + " with subscriber_id: " + subscriber_id;
+                                this.insertLogging("NEW SUBSCRIPTION created for user_id: " + user_id + " with subscriber_id: " + subscriber_id, endpoint);
+                                return "NEW SUBSCRIPTION created for user_id: " + user_id + " with subscriber_id: " + subscriber_id;
                             } else {
+                                this.insertLogging("New subscription created, but failed to get subscriber_id", endpoint);
                                 return "New subscription created, but failed to get subscriber_id";
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
+                            this.insertLogging("New subscription created, but failed to get subscriber_id", endpoint);
                             return "New subscription created, but failed to get subscriber_id";
                         }
                     } else {
+                        this.insertLogging("New subscription not created", endpoint);
                         return "New subscription not created";
                     }
                 }
             } else {
+                this.insertLogging("Subscription already exists for user_id: " + user_id, endpoint);
                 return "Subscription already exists for user_id: " + user_id;
             }
         } catch (Exception e) {
             e.printStackTrace();
+            this.insertLogging("Error creating subscription: " + e.getMessage(), endpoint);
             return "Error creating subscription: " + e.getMessage();
         } finally {
             db.closeConnection();
@@ -132,29 +137,31 @@ public class Subscription {
 
     @WebMethod
     public String updateStatus(String status, int user_id) {
-        if (!validateAPIKey()) {
-            return "API Key is not valid";
-        }
+        // if (!validateAPIKey()) {
+        //     return "API Key is not valid";
+        // }
         MessageContext msgContext = wsContext.getMessageContext();
         HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
         String endpoint = httpExchange.getRequestURI().toString();
-        this.insertLogging("UPDATE STATUS " + status + " dari " + user_id, endpoint);
         Database db = new Database();
         String query = "UPDATE subscription SET status = ? WHERE user_id = ?";
-    
+        
         try (PreparedStatement preparedStatement = db.getConnection().prepareStatement(query)) {
             preparedStatement.setString(1, status);
             preparedStatement.setInt(2, user_id);
-    
+            
             int affectedRows = preparedStatement.executeUpdate();
-    
+            
             if (affectedRows > 0) {
-                return "Status updated to " + status + " user_id: " + user_id;
+                this.insertLogging("status user_id " + user_id + " UPDATE to " + status, endpoint);
+                return "status user_id " + user_id + " UPDATE to " + status;
             } else {
+                this.insertLogging("User with user_id: " + user_id + " not found", endpoint);
                 return "User with user_id: " + user_id + " not found";
             }
         } catch (Exception e) {
             e.printStackTrace();
+            this.insertLogging("Error updating status: " + e.getMessage(), endpoint);
             return "Error updating status: " + e.getMessage();
         } finally {
             db.closeConnection();
@@ -164,9 +171,9 @@ public class Subscription {
 
     @WebMethod
     public List<String> getAllPendingRequest() throws Exception {
-        if (!validateAPIKey()) {
-            throw new Exception("API Key is not valid");
-        }
+        // if (!validateAPIKey()) {
+        //     throw new Exception("API Key is not valid");
+        // }
         List<String> resultList = new ArrayList<>();
         try {
             MessageContext msgContext = wsContext.getMessageContext();
@@ -200,20 +207,21 @@ public class Subscription {
 
     @WebMethod
     public String getStatus(int user_id) throws Exception {
-        if (!validateAPIKey()) {
-            throw new Exception("API Key is not valid");
-        }
+        // if (!validateAPIKey()) {
+        //     throw new Exception("API Key is not valid");
+        // }
         try {
             MessageContext msgContext = wsContext.getMessageContext();
             HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
             String endpoint = httpExchange.getRequestURI().toString();
-            this.insertLogging("GET STATUS dari " + user_id, endpoint);
             Database db = new Database();
             ResultSet rs = db.readQuery("SELECT status FROM subscription WHERE user_id = " + user_id);
             if(rs.next()){
-                return user_id + " " + (String) rs.getObject(1);
+                this.insertLogging("Status " + user_id + " adalah " + (String) rs.getObject(1), endpoint);
+                return "Status " + user_id + " adalah " + (String) rs.getObject(1);
             }
             else{
+                this.insertLogging("Status " + user_id + " tidak ditemukan", endpoint);
                 return "NOT FOUND";
             }
         } catch (Exception e) {
