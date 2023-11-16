@@ -73,9 +73,9 @@ public class Subscription {
 
     @WebMethod
     public String newSubscription(int user_id) {
-        // if (!validateAPIKey()) {
-        //     return "API Key is not valid";
-        // }
+        if (!validateAPIKey()) {
+            return "API Key is not valid";
+        }
         Database db = new Database();
         MessageContext msgContext = wsContext.getMessageContext();
         HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
@@ -137,9 +137,9 @@ public class Subscription {
 
     @WebMethod
     public String updateStatus(String status, int user_id) {
-        // if (!validateAPIKey()) {
-        //     return "API Key is not valid";
-        // }
+        if (!validateAPIKey()) {
+            return "API Key is not valid";
+        }
         MessageContext msgContext = wsContext.getMessageContext();
         HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
         String endpoint = httpExchange.getRequestURI().toString();
@@ -171,9 +171,9 @@ public class Subscription {
 
     @WebMethod
     public List<String> getAllPendingRequest() throws Exception {
-        // if (!validateAPIKey()) {
-        //     throw new Exception("API Key is not valid");
-        // }
+        if (!validateAPIKey()) {
+            throw new Exception("API Key is not valid");
+        }
         List<String> resultList = new ArrayList<>();
         try {
             MessageContext msgContext = wsContext.getMessageContext();
@@ -207,9 +207,9 @@ public class Subscription {
 
     @WebMethod
     public String getStatus(int user_id) throws Exception {
-        // if (!validateAPIKey()) {
-        //     throw new Exception("API Key is not valid");
-        // }
+        if (!validateAPIKey()) {
+            throw new Exception("API Key is not valid");
+        }
         try {
             MessageContext msgContext = wsContext.getMessageContext();
             HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
