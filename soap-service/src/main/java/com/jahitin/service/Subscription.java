@@ -17,52 +17,14 @@ import com.sun.net.httpserver.HttpExchange;
 import java.sql.Statement;
 import java.util.Arrays;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @WebService
 @SOAPBinding(style = Style.DOCUMENT)
 public class Subscription {
     @Resource
     WebServiceContext wsContext;
-
-    @WebMethod
-    public String sayHello(String name) {
-        return "Hello, " + name + "!";
-    }
-
-    @WebMethod
-    public String testDatabase() {
-        Database db = new Database();
-        Connection conn = db.getConnection();
-
-        try {
-            String query  = "SELECT * FROM logging";
-            ResultSet rs = db.readQuery(query);
-
-            StringBuilder resultStringBuilder = new StringBuilder();
-
-            while (rs.next()) {
-                String id = rs.getString("id");
-                String description = rs.getString("description");
-                String ip = rs.getString("ip");
-                String endpoint = rs.getString("endpoint");
-                String timestamp = rs.getString("timestamp");
-                String formattedData = String.format("ID: %s, Description: %s, IP: %s, Endpoint: %s, Timestamp: %s%n",
-                        id, description, ip, endpoint, timestamp);
-                resultStringBuilder.append(formattedData);
-            }
-
-            if (resultStringBuilder.length() > 0) {
-                return resultStringBuilder.toString();
-            } else {
-                return "No data found";
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Error lagi dan lagi: " + e.getMessage();
-        } finally {
-            db.closeConnection();
-        }
-    }
-    
 
     @WebMethod
     public void insertLogging(String description, String endpoint) {
@@ -79,8 +41,6 @@ public class Subscription {
                 System.out.println("CLIENT IP IS NULL");
                 return;
             }
-
-            // Gunakan PreparedStatement untuk mencegah SQL injection
             String query = "INSERT INTO logging (description, ip, endpoint, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
 
             try (PreparedStatement preparedStatement = db.getConnection().prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
@@ -112,37 +72,54 @@ public class Subscription {
     }
 
     @WebMethod
-    public void newSubscription(int subscriber_id) {
+    public String newSubscription(int user_id) {
         Database db = new Database();
         MessageContext msgContext = wsContext.getMessageContext();
         HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
         String endpoint = httpExchange.getRequestURI().toString();
+        
         try {
-            if (!isSubscriptionExists(subscriber_id)) {
-                this.insertLogging("SUBSCRIPTION BARU dari " + subscriber_id, endpoint);
-
-                String query = "INSERT INTO subscription (subscriber_id) VALUES (?)";
-                try (PreparedStatement preparedStatement = db.getConnection().prepareStatement(query)) {
-                    preparedStatement.setInt(1, subscriber_id);
-                    preparedStatement.executeUpdate();
-
-                    System.out.println("Subscription added  with subscriber_id: " + subscriber_id);
+            if (!isSubscriptionExists(user_id)) {
+                this.insertLogging("SUBSCRIPTION BARU dari " + user_id, endpoint);
+    
+                String query = "INSERT INTO subscription (user_id) VALUES (?)";
+                try (PreparedStatement preparedStatement = db.getConnection().prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+                    preparedStatement.setInt(1, user_id);
+                    int result = preparedStatement.executeUpdate();
+    
+                    if (result > 0) {
+                        try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
+                            if (generatedKeys.next()) {
+                                int subscriber_id = generatedKeys.getInt(1);
+                                return "New subscription created for user_id: " + user_id + " with subscriber_id: " + subscriber_id;
+                            } else {
+                                return "New subscription created, but failed to get subscriber_id";
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            return "New subscription created, but failed to get subscriber_id";
+                        }
+                    } else {
+                        return "New subscription not created";
+                    }
                 }
             } else {
-                System.out.println("Subscription already exists for subscriber_id: " + subscriber_id);
+                return "Subscription already exists for user_id: " + user_id;
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return "Error creating subscription: " + e.getMessage();
         } finally {
             db.closeConnection();
         }
     }
+    
 
-    private boolean isSubscriptionExists(int subscriber_id) throws Exception {
+    private boolean isSubscriptionExists(int user_id) throws Exception {
         Database db = new Database();
-        String query = "SELECT COUNT(*) FROM subscription WHERE subscriber_id = ?";
+        String query = "SELECT COUNT(*) FROM subscription WHERE user_id = ?";
         try (PreparedStatement preparedStatement = db.getConnection().prepareStatement(query)) {
-            preparedStatement.setInt(1, subscriber_id);
+            preparedStatement.setInt(1, user_id);
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 resultSet.next();
                 int count = resultSet.getInt(1);
@@ -152,59 +129,55 @@ public class Subscription {
     }
 
     @WebMethod
-    public void updateStatus(String status, int subscriber_id) {
-        Database db = new Database();
-
-        String query = "UPDATE subscription SET status = ? WHERE subscriber_id = ?";
-
-        try (PreparedStatement preparedStatement = db.getConnection().prepareStatement(query)) {
-            preparedStatement.setString(1, status);
-            preparedStatement.setInt(2, subscriber_id);
-            preparedStatement.executeUpdate();
-            System.out.println("Status updated to " + status + " subscriber_id: " + subscriber_id);
-        } catch (Exception e) {
-            e.printStackTrace();
-
+    public List<String> getAllPendingRequest() throws Exception {
+        if (!validateAPIKey()) {
+            throw new Exception("API Key is not valid");
         }
-    }
-
-    @WebMethod
-    public String getAllPendingRequest() throws Exception {
+        List<String> resultList = new ArrayList<>();
         try {
-            this.insertLogging("GET ALL PENDING SUBSCRIPTION REQUEST", "getAllPendingSubscriptionRequest");
+            MessageContext msgContext = wsContext.getMessageContext();
+            HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
+            String endpoint = httpExchange.getRequestURI().toString();
+            this.insertLogging("GET ALL PENDING SUBSCRIPTION REQUEST", endpoint);
             Database db = new Database();
             ResultSet rs = db.readQuery("SELECT * FROM subscription WHERE status = 'PENDING'");
-            StringBuilder resultStringBuilder = new StringBuilder();
 
             while (rs.next()) {
                 String subscriberId = rs.getString("subscriber_id");
                 String status = rs.getString("status");
                 String formattedData = String.format("Subscriber ID: %s, Status: %s%n", subscriberId, status);
-                resultStringBuilder.append(formattedData);
+                resultList.add(formattedData);
             }
 
-            if (resultStringBuilder.length() > 0) {
+            if (!resultList.isEmpty()) {
                 System.out.println("Data found");
-                return resultStringBuilder.toString();
             } else {
                 System.out.println("No pending subscription requests found");
-                return "No data found";
+                resultList.add("No data found");
             }
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
         }
+        return resultList;
     }
 
 
+
     @WebMethod
-    public String getStatus(int subscriber_id) throws Exception {
+    public String getStatus(int user_id) throws Exception {
+        if (!validateAPIKey()) {
+            throw new Exception("API Key is not valid");
+        }
         try {
-            this.insertLogging("GET STATUS dari " + subscriber_id, "getStatus");
+            MessageContext msgContext = wsContext.getMessageContext();
+            HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
+            String endpoint = httpExchange.getRequestURI().toString();
+            this.insertLogging("GET STATUS dari " + user_id, endpoint);
             Database db = new Database();
-            ResultSet rs = db.readQuery("SELECT status FROM subscription WHERE subscriber_id = " + subscriber_id);
+            ResultSet rs = db.readQuery("SELECT status FROM subscription WHERE user_id = " + user_id);
             if(rs.next()){
-                return (String) rs.getObject(1);
+                return user_id + " " + (String) rs.getObject(1);
             }
             else{
                 return "NOT FOUND";
@@ -216,43 +189,17 @@ public class Subscription {
     }
 
     private boolean validateAPIKey() {
-        String[] apiKeyList = {"PremApp", "Postman", "RestClient", "RegularApp"};
+        String[] apiKeyList = {"RestClient", "PHPClient"};
         MessageContext messageContext = this.wsContext.getMessageContext();
         HttpExchange exchange = (HttpExchange) messageContext.get("com.sun.xml.ws.http.exchange");
         String APIKey = exchange.getRequestHeaders().getFirst("X-API-KEY");
         System.out.println("APIKey: " + APIKey);
         if (APIKey == null) {
             return false;
-        } else if (APIKey.equals(apiKeyList[0]) || APIKey.equals(apiKeyList[1]) || APIKey.equals(apiKeyList[2]) || APIKey.equals(apiKeyList[3])) {
+        } else if (APIKey.equals(apiKeyList[0]) || APIKey.equals(apiKeyList[1])) {
             return true;
         } else {
             return false;
         }
     }
-
-
-    @WebMethod
-    public Boolean validate(int subscriber_id) throws Exception {
-        try {
-            this.insertLogging("VALIDASI dari " + subscriber_id, "validate");
-            MessageContext messageContext = this.wsContext.getMessageContext();
-            HttpExchange exchange = (HttpExchange) messageContext.get("com.sun.xml.ws.http.exchange");
-            Headers requestHeaders = exchange.getRequestHeaders();
-            requestHeaders.put("Cache-Control", Arrays.asList("max-age=1", "stale-while-revalidate=59"));
-            Database db = new Database();
-            ResultSet rs = db.readQuery("SELECT status FROM subscription WHERE subscriber_id = " + subscriber_id);
-            if(rs.next()){
-                return ((String) rs.getObject(1)).equals("ACCEPTED");
-            }
-            else{
-                return false;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-    }
-
-    // @WebMethod
-    // public 
 }
