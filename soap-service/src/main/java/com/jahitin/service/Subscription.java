@@ -10,18 +10,12 @@ import javax.jws.soap.SOAPBinding;
 import javax.jws.soap.SOAPBinding.Style;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 
 import java.sql.Statement;
-import java.util.Arrays;
-
 import java.util.ArrayList;
-import java.util.List;
 
 
 @WebService
@@ -157,8 +151,8 @@ public class Subscription {
             int affectedRows = preparedStatement.executeUpdate();
             
             if (affectedRows > 0) {
-                this.insertLogging("status user_id " + user_id + " UPDATE to " + status, endpoint);
-                return "status user_id " + user_id + " UPDATE to " + status;
+                this.insertLogging("UPDATE STATUS user_id " + user_id + " to " + status, endpoint);
+                return "UPDATE STATUS user_id " + user_id + " to " + status;
             } else {
                 this.insertLogging("User with user_id: " + user_id + " not found", endpoint);
                 return "User with user_id: " + user_id + " not found";
@@ -188,9 +182,9 @@ public class Subscription {
             ResultSet rs = db.readQuery("SELECT * FROM subscription WHERE status = 'PENDING'");
 
             while (rs.next()) {
-                int subscriberId = rs.getInt("subscriber_id");
+                int userID = rs.getInt("user_id");
                 String status = rs.getString("status");
-                ADTSubscription adtSubscription = new ADTSubscription(subscriberId, status);
+                ADTSubscription adtSubscription = new ADTSubscription(userID, status);
                 resultList.add(adtSubscription);
             }
 
