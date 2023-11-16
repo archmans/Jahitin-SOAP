@@ -77,9 +77,9 @@ public class Subscription {
 
     @WebMethod
     public String newSubscription(int user_id) {
-         if (!validateAPIKey()) {
-             return "API Key is not valid";
-         }
+        if (!validateAPIKey()) {
+            return "API Key is not valid";
+        }
         Database db = new Database();
         MessageContext msgContext = wsContext.getMessageContext();
         HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
@@ -141,9 +141,9 @@ public class Subscription {
 
     @WebMethod
     public String updateStatus(String status, int user_id) {
-         if (!validateAPIKey()) {
-             return "API Key is not valid";
-         }
+        if (!validateAPIKey()) {
+            return "API Key is not valid";
+        }
         MessageContext msgContext = wsContext.getMessageContext();
         HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
         String endpoint = httpExchange.getRequestURI().toString();
@@ -173,47 +173,47 @@ public class Subscription {
     }
 
 
-     @WebMethod
-     public ArrayList<ADTSubscription> getAllPendingRequest() throws Exception {
-          if (!validateAPIKey()) {
-              throw new Exception("API Key is not valid");
-          }
-         ArrayList<ADTSubscription> resultList = new ArrayList<>();
-         try {
-             MessageContext msgContext = wsContext.getMessageContext();
-             HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
-             String endpoint = httpExchange.getRequestURI().toString();
-             this.insertLogging("GET ALL PENDING SUBSCRIPTION REQUEST", endpoint);
-             Database db = new Database();
-             ResultSet rs = db.readQuery("SELECT * FROM subscription WHERE status = 'PENDING'");
+    @WebMethod
+    public ArrayList<ADTSubscription> getAllPendingRequest() throws Exception {
+        if (!validateAPIKey()) {
+            throw new Exception("API Key is not valid");
+        }
+        ArrayList<ADTSubscription> resultList = new ArrayList<>();
+        try {
+            MessageContext msgContext = wsContext.getMessageContext();
+            HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
+            String endpoint = httpExchange.getRequestURI().toString();
+            this.insertLogging("GET ALL PENDING SUBSCRIPTION REQUEST", endpoint);
+            Database db = new Database();
+            ResultSet rs = db.readQuery("SELECT * FROM subscription WHERE status = 'PENDING'");
 
-             while (rs.next()) {
-                 int subscriberId = rs.getInt("subscriber_id");
-                 String status = rs.getString("status");
-                 ADTSubscription adtSubscription = new ADTSubscription(subscriberId, status);
-                 resultList.add(adtSubscription);
-             }
+            while (rs.next()) {
+                int subscriberId = rs.getInt("subscriber_id");
+                String status = rs.getString("status");
+                ADTSubscription adtSubscription = new ADTSubscription(subscriberId, status);
+                resultList.add(adtSubscription);
+            }
 
-             if (!resultList.isEmpty()) {
-                 System.out.println("Data found");
-             } else {
-                 System.out.println("No pending subscription requests found");
-                 ADTSubscription noDataFound = new ADTSubscription(0, "No data found");
-                 resultList.add(noDataFound);
-             }
-         } catch (Exception e) {
-             e.printStackTrace();
-             throw e;
-         }
-         return resultList;
-     }
+            if (!resultList.isEmpty()) {
+                System.out.println("Data found");
+            } else {
+                System.out.println("No pending subscription requests found");
+                ADTSubscription noDataFound = new ADTSubscription(0, "No data found");
+                resultList.add(noDataFound);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
+        return resultList;
+    }
 
 
     @WebMethod
     public String getStatus(int user_id) throws Exception {
-         if (!validateAPIKey()) {
-             throw new Exception("API Key is not valid");
-         }
+        if (!validateAPIKey()) {
+            throw new Exception("API Key is not valid");
+        }
         try {
             MessageContext msgContext = wsContext.getMessageContext();
             HttpExchange httpExchange = (HttpExchange) msgContext.get("com.sun.xml.ws.http.exchange");
@@ -238,7 +238,7 @@ public class Subscription {
         String[] apiKeyList = {"RestClient", "PHPClient"};
         MessageContext messageContext = this.wsContext.getMessageContext();
         HttpExchange exchange = (HttpExchange) messageContext.get("com.sun.xml.ws.http.exchange");
-        String APIKey = exchange.getRequestHeaders().getFirst("X-API-KEY");
+        String APIKey = exchange.getRequestHeaders().getFirst("x-api-key");
         System.out.println("APIKey: " + APIKey);
         if (APIKey == null) {
             return false;
