@@ -8,10 +8,9 @@ CREATE TABLE IF NOT EXISTS `logging` (
 ) 
 
 CREATE TABLE IF NOT EXISTS `subscription` (
-  `penjahit_id` int NOT NULL,
   `subscriber_id` int NOT NULL,
   `status` enum('ACCEPTED','REJECTED','PENDING') NOT NULL DEFAULT 'PENDING',
-  PRIMARY KEY (penjahit_id, subscriber_id)
+  PRIMARY KEY (subscriber_id)
 ) 
 
 INSERT INTO `logging` (`id`, `description`, `ip`, `endpoint`, `timestamp`) VALUES
