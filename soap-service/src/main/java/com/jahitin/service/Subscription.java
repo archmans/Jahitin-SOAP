@@ -179,7 +179,7 @@ public class Subscription {
             String endpoint = httpExchange.getRequestURI().toString();
             this.insertLogging("GET ALL PENDING SUBSCRIPTION REQUEST", endpoint);
             Database db = new Database();
-            ResultSet rs = db.readQuery("SELECT * FROM subscription WHERE status = 'PENDING'");
+            ResultSet rs = db.readQuery("SELECT * FROM subscription");
 
             while (rs.next()) {
                 int userID = rs.getInt("user_id");
