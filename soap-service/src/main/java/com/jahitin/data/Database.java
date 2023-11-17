@@ -46,17 +46,4 @@ public class Database {
             throw new Exception("Error reading data: " + e.getMessage());
         }
     }
-
-//    public int createQuery(String query) throws Exception{
-//        System.out.println(query);
-//        try {
-//            Statement statement = getConnection().createStatement();
-//            statement.executeUpdate(query, Statement.RETURN_GENERATED_KEYS);
-//            return statement.executeUpdate(query);
-//        }
-//        catch (Exception e) {
-//            e.printStackTrace();
-//            return 0;
-//        }
-//    }
 }
